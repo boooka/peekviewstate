@@ -57,7 +57,7 @@ def buildtypelookup():
         if hasattr(item,"_header"):
             VSTYPELOOKUP[getattr(item,"_header")] = item
             VSTYPELOOKUP[name] = VSTYPELOOKUP[getattr(item,"_header")]
-    print VSTYPELOOKUP["\x0b\x2a"]
+    #print VSTYPELOOKUP["\x0b\x2a"]
 
 def buildassemblylookup():
     module = sys.modules[globals()['__name__']]
@@ -1227,15 +1227,13 @@ def encodeint(dec):
   d = (dec // 0x80)
   if dec == 0:
       return "\x66"
-  elif r >= 0x80:
-      #print hex(r), " ", hex(dec), " ", hex(d)      
-      return chr(r)
-  elif ((dec-r)-0x80*d&0xff) == 0 and d < 0xff:
-      #print hex(d), " ", hex(dec), " ", 0x80*(d&0xff), " ", dec-0x80*(d&0xff)      
+  elif (dec-r) == 0:
+      return chr(0x80+r)
+  elif ((dec-r)- (0x80 * d)) == 0 and d < 0x80:
       return chr(0x80+r)+chr(d)
-  elif d&0x80 >= 0x80:
-      #print hex(d), " ", hex(dec), " ", 0x80*(d&0xff), " ", dec-0x80*(d&0xff)
-      return chr(0x80+r)+chr(0x80+d&0xff)+encodeint((dec-r)-0x80*(d&0xff))
+  #elif d&(~0xff) >= 0x80:
+  #    print hex(d), " ", hex(dec), " ", 0x80*(d&0xff), " ", dec-0x80*(d&0xff)
+  #    return chr(0x80+r)+chr(0x80+d&0xff)+encodeint((dec-r)-0x80*(d&0xff))
   elif d < 0x80:
       #print hex(d), " ", hex(dec), " ", 0x80*(d&0xff), " ", dec-0x80*(d&0xff)
       return chr(0x80+r)+chr(d)+encodeint((dec-r)-0x80*d)
