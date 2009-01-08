@@ -1219,77 +1219,31 @@ def encodeint(dec):
           1024 == \x80\x08
           2048 == \x80\x10
           4096 == \x80\x20
-          65538== \x80\x80\x84
+          65538== \x80\x80\x04
       268435456== \x80\x80\x80\x80\x01 (128^4)
   '''
-  result = ''
-  # r is remainder
-  # d is divisor
-  i = 1
-  c = 0 # carry
+  #print dec
   r = dec % 0x80
-  if r == 0 and dec == 0x80:
-    return '\x80\x01'
-  elif dec > 0x80 and r < 0x80:
-    r += 0x80
-    result += chr(r)
-    c = 1
+  d = (dec // 0x80)
+  if dec == 0:
+      return "\x66"
+  elif r >= 0x80:
+      #print hex(r), " ", hex(dec), " ", hex(d)      
+      return chr(r)
+  elif ((dec-r)-0x80*d&0xff) == 0 and d < 0xff:
+      #print hex(d), " ", hex(dec), " ", 0x80*(d&0xff), " ", dec-0x80*(d&0xff)      
+      return chr(0x80+r)+chr(d)
+  elif d&0x80 >= 0x80:
+      #print hex(d), " ", hex(dec), " ", 0x80*(d&0xff), " ", dec-0x80*(d&0xff)
+      return chr(0x80+r)+chr(0x80+d&0xff)+encodeint((dec-r)-0x80*(d&0xff))
+  elif d < 0x80:
+      #print hex(d), " ", hex(dec), " ", 0x80*(d&0xff), " ", dec-0x80*(d&0xff)
+      return chr(0x80+r)+chr(d)+encodeint((dec-r)-0x80*d)
   else:
-    result += chr(r)
-  if dec - r == 0 and r > 0x80:
-    result += chr(0x01)
-  print "Remainder:  %x, %u"%(r, c)
-  dec -= r
-  while dec > 0:
-    # progress through the loop 
-    d = (dec // (0x80 ** i)) & 0xff
-    if (d+c) & 0xff == 0x0 or (d+c) == 0x80 :
-      # This case represents if 128 evenly divides and the number is >= 7f.
-      # This function will carry the bit all the way to the end and also
-      # add \x80 to the string with each iteration
-      #print "Case: (d+c) & 0xff == 0x0: ", hex(dec), hex(d), hex(c)
-      result += chr(0x80)
-      dec = dec - ((d+c)&0xff * 0x80 ** i)
-      c = 1
-    elif d == 0 and dec > 0x80 and c == 1:
-      # This case represents when the above condition is satisfied all the way 
-      # out to the \x7f.  This appends the \0x01 at the end of the 
-      # string indicating the number is a perfect root of 128
-      #print "Case: d == 0 and dec > 0x80 and c == 1:", hex(dec), hex(d), hex(c)
-      result += chr(0x1)
-      dec = dec - ((d+c)&0xff * 0x80 ** i)
-      c = 0
-      # break because there is nothing more to do
-      break
-    elif (dec - (d * 0x80 ** i)) > 0x80 and d < 0x80:
-      # This is the standard case, where d < 0x80, and the remaining difference
-      # will result in another column.  If that is the case, d is added to 0x80
-      # If this is not done the 1) string is not proper base 128 (?) and the 
-      # number cannot be de(coded || serialized) correctly
-      #print "Case: d < 0x80 and dec > 0x80: ", hex(dec), hex(d), hex(c)
-      result += chr(d+0x80+c)
-      dec = dec - ((d+0x80) * 0x80 ** i)
-      c = 1
-    elif (dec - (d * 0x80 ** i)) == 0 and d > 0x80:
-      # This is the standard case, where d < 0x80, and the remaining difference
-      # will result in another column.  If that is the case, d is added to 0x80
-      # If this is not done the 1) string is not proper base 128 (?) and the 
-      # number cannot be de(coded || serialized) correctly
-      print "(dec - (d * 0x80 ** i)) == 0 and d > 0x80", hex(dec), hex(d), hex(c)
-      result += chr(d+0x80+c) + chr(0x01)
-      dec = dec - ((d+0x80) * 0x80 ** i)
-      c = 1
-    else:
-      # default case, meaning the divisor needs not special consideration
-      # Includes case:
-      #     1) d > 0x80 and d is not the last value
-      #     2) d < 0x80 and d is the last value
-      #     3) d does not meet any of the cases above
-      # print "Default Case: ", hex(dec), hex(d), hex(c)
-      result += chr(d+c)
-      dec = dec - (d * 0x80 ** i)
-    i = i + 1
-  return result
+      #print hex(d), " ", hex(dec), " ", 0x80*(d&0xff), " ", dec-0x80*(d&0xff)
+      return chr(0x80+r)+encodeint((dec-r)/0x80)
+
+
 
 def ConvertToSignedValue(val):
   if val > 2147483647: return val + (2*-2147483648)
