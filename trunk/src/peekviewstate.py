@@ -846,7 +846,7 @@ class SystemString:
     def sobj_size(self):
       return len(self.rencode())
 
-class Control:
+class SystemWebString:
     _header = '\x0b\x2a'
     def __init__(self):
       self.pos = -1
